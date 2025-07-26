@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/springsecurity6">
+<head>
+    <title>Dashboard - Secure File Sharing</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body { background: #f8f9fa; transition: background 0.3s, color 0.3s; }
+        .table thead th { background: #2186eb; color: #fff; }
+        .btn-primary { background: #2186eb; border: none; transition: background 0.3s, color 0.3s; }
+        .btn-primary:hover { background: #1765b9; }
+        .btn-danger { background: #e74c3c; border: none; transition: background 0.3s, color 0.3s; }
+        .btn-danger:hover { background: #c0392b; }
+        .folder-item { cursor: pointer; transition: background 0.3s, color 0.3s; }
+        .folder-item:hover { background-color: #f8f9fa; }
+        .folder-item.active { background-color: #e9ecef; }
+        .card, .table, .list-group-item { transition: background 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s; }
+
+        /* Improved Dark Mode */
+        body.dark-mode {
+            background: #222b36;
+            color: #f1f3f4;
+        }
+        body.dark-mode .card, body.dark-mode .table {
+            background: #262c36;
+            color: #f1f3f4;
+            border-radius: 10px;
+            border: 1px solid #23272b;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.6);
+        }
+        body.dark-mode .table thead th {
+            background: #1765b9;
+            color: #fff;
+        }
+        body.dark-mode .table tbody tr {
+            background: #23272b;
+            border-bottom: 1px solid #343a40;
+        }
+        body.dark-mode .table tbody tr:nth-child(even) {
+            background: #24292f;
+        }
+        body.dark-mode .table tbody tr:hover {
+            background: #222b36;
+        }
+        body.dark-mode .btn-primary {
+            background: #2186eb;
+            color: #fff;
+            border: none;
+        }
+        body.dark-mode .btn-primary:hover {
+            background: #1765b9;
+        }
+        body.dark-mode .btn-danger {
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+        }
+        body.dark-mode .btn-danger:hover {
+            background: #c0392b;
+        }
+        body.dark-mode .btn-info {
+            background: #00bcd4;
+            color: #fff;
+            border: none;
+        }
+        body.dark-mode .btn-info:hover {
+            background: #0097a7;
+        }
+        body.dark-mode .btn-secondary {
+            background: #444950;
+            color: #fff;
+        }
+        body.dark-mode .btn-outline-secondary {
+            color: #fff;
+            border-color: #888;
+            background: transparent;
+        }
+        body.dark-mode .btn-outline-secondary:hover {
+            background: #343a40;
+            color: #fff;
+        }
+        body.dark-mode .list-group-item {
+            background: #23272b;
+            color: #f1f3f4;
+            border-color: #343a40;
+        }
+        body.dark-mode .list-group-item.active, body.dark-mode .folder-item.active {
+            background: #1765b9;
+            color: #fff;
+        }
+        body.dark-mode .list-group-item-action:hover, body.dark-mode .folder-item:hover {
+            background: #222b36;
+            color: #fff;
+        }
+        body.dark-mode .modal-content {
+            background: #23272b;
+            color: #f1f3f4;
+            border-radius: 10px;
+        }
+        body.dark-mode input, body.dark-mode textarea, body.dark-mode select {
+            background: #181a1b;
+            color: #f1f3f4;
+            border: 1px solid #343a40;
+        }
+        body.dark-mode input:focus, body.dark-mode textarea:focus, body.dark-mode select:focus {
+            background: #23272b;
+            color: #fff;
+            border-color: #2186eb;
+            box-shadow: 0 0 0 0.2rem #2186eb80;
+        }
+        body.dark-mode .alert-danger {
+            background: #b92d2b;
+            color: #fff;
+            border: none;
+        }
+        body.dark-mode .text-muted {
+            color: #b0b3b8 !important;
+        }
+        body.dark-mode a {
+            color: #4ea1f7;
+        }
+        body.dark-mode a:hover {
+            color: #90caf9;
+        }
+        body.dark-mode .form-check-input:checked {
+            background-color: #2186eb;
+            border-color: #2186eb;
+        }
+        body.dark-mode .form-check-input {
+            background-color: #23272b;
+            border: 1px solid #343a40;
+        }
+        body.dark-mode .form-check-input:focus {
+            box-shadow: 0 0 0 0.2rem #2186eb80;
+        }
+        body, .card, .table, .list-group-item, .btn, .alert, .form-check-input, .form-label, label, .list-group-item-action, .folder-item, a, .text-muted {
+            transition: background 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+    </style>
+</head>
+<body>
+<button id="darkModeToggle" class="btn btn-outline-secondary position-absolute top-0 end-0 m-3" style="z-index: 1050;">🌙</button>
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Folders</span>
+                    <form th:action="@{'/folders/create'}" method="post" class="d-inline-flex" style="gap:4px;">
+                        <input type="text" name="name" class="form-control form-control-sm" placeholder="New folder" required style="width: 100px;">
+                        <button type="submit" class="btn btn-sm btn-primary">+</button>
+                    </form>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item" th:classappend="${selectedFolderId} == null ? 'active' : ''">
+                        <a th:href="@{/dashboard}" style="text-decoration:none;color:inherit;">Root</a>
+                    </li>
+                    <li class="list-group-item folder-item" 
+                        th:each="folder : ${folders}" 
+                        th:classappend="${selectedFolderId} == folder.id ? 'active' : ''"
+                        th:data-folder-id="${folder.id}"
+                        th:data-folder-name="${folder.name}"
+                        data-bs-toggle="modal" 
+                        data-bs-target="#folderModal">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span th:text="${folder.name}"></span>
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <p class="text-muted mb-0" sec:authorize="isAuthenticated()"
+                       th:text="|Welcome, ${#authentication.name}|"></p>
+                    <p class="text-muted mb-0" sec:authorize="!isAuthenticated()">
+                       Welcome, guest
+                    </p>
+                    <h2 class="mb-0">Your Files</h2>
+                </div>
+                <div>
+                    <a th:href="@{/upload(folderId=${selectedFolderId})}" class="btn btn-success me-2">Upload File</a>
+                    <a th:href="@{/logout}" class="btn btn-secondary">Logout</a>
+                </div>
+            </div>
+            <div th:if="${error}" class="alert alert-danger mb-4" th:text="${error}"></div>
+            <div class="card">
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Created At</th>
+                                <th>File Name</th>
+                                <th>Size</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="file : ${files}">
+                                <td th:text="${#temporals.format(file.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
+                                <td th:text="${file.originalFileName}"></td>
+                                <td th:text="${#numbers.formatDecimal(file.fileSize / 1024.0, 1, 2)} + ' KB'"></td>
+                                <td>
+                                    <a th:if="${file.fileType != null and (file.fileType.startsWith('image/') or file.fileType.startsWith('application/pdf') or file.fileType.startsWith('text/'))}" th:href="@{'/preview/' + ${file.id}}" class="btn btn-info btn-sm" target="_blank">Preview</a>
+                                    <a th:href="@{'/download/' + ${file.id}}" class="btn btn-primary btn-sm">Download</a>
+                                    <a th:href="@{'/delete/' + ${file.id}}" class="btn btn-danger btn-sm">Delete</a>
+                                </td>
+                            </tr>
+                            <tr th:if="${files.size()} == 0">
+                                <td colspan="4" class="text-center text-muted">No files uploaded yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Folder Action Modal -->
+<div class="modal fade" id="folderModal" tabindex="-1" aria-labelledby="folderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="folderModalLabel">Folder Actions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group">
+                    <!-- Edit Folder Name -->
+                    <form th:action="@{/folders/edit}" method="post" class="list-group-item list-group-item-action">
+                        <input type="hidden" name="folderId" id="editFolderId">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="newName" id="editFolderName" required>
+                            <button type="submit" class="btn btn-primary">Rename</button>
+                        </div>
+                    </form>
+                    
+                    <!-- Upload to Folder -->
+                    <a href="#" class="list-group-item list-group-item-action" id="uploadToFolderBtn">
+                        <i class="bi bi-upload me-2"></i>Upload File to Folder
+                    </a>
+                    
+                    <!-- Delete Folder -->
+                    <form th:action="@{/folders/delete}" method="post" class="list-group-item list-group-item-action">
+                        <input type="hidden" name="folderId" id="deleteFolderId">
+                        <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Are you sure you want to delete this folder? All files in this folder will be moved to root.')">
+                            <i class="bi bi-trash me-2"></i>Delete Folder
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Bootstrap JS and custom script -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle folder click
+    const folderItems = document.querySelectorAll('.folder-item');
+    folderItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            // Don't trigger modal if clicking the three dots icon
+            if (e.target.classList.contains('bi-three-dots-vertical')) {
+                e.stopPropagation();
+                return;
+            }
+            
+            // Navigate to folder view
+            const folderId = this.dataset.folderId;
+            window.location.href = `/dashboard?folderId=${folderId}`;
+        });
+    });
+
+    // Handle modal show
+    const folderModal = document.getElementById('folderModal');
+    folderModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const folderId = button.dataset.folderId;
+        const folderName = button.dataset.folderName;
+        
+        // Set values in modal
+        document.getElementById('editFolderId').value = folderId;
+        document.getElementById('editFolderName').value = folderName;
+        document.getElementById('deleteFolderId').value = folderId;
+        
+        // Set upload link
+        document.getElementById('uploadToFolderBtn').href = `/upload?folderId=${folderId}`;
+    });
+
+    // Dark mode toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const body = document.body;
+    // Load preference
+    if (localStorage.getItem('darkMode') === 'true') {
+        body.classList.add('dark-mode');
+    }
+    darkModeToggle.addEventListener('click', function() {
+        body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', body.classList.contains('dark-mode'));
+    });
+});
+</script>
+</body>
+</html> 
